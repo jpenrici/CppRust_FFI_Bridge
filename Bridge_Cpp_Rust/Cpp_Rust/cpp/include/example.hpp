@@ -40,13 +40,11 @@ std::string process_text_cpp(const std::string& input);
 
 } // namespace smart
 
-// Extern "Rust" (Wrapper)
+// C ABI Wrapper (Extern "Rust")
 extern "C" {
 
-const char* process_text(const char* input) {
-    static thread_local std::string buffer;
-    buffer = smart::process_text_cpp(input);
-    return buffer.c_str();
-}
+const char* process_text(const char* input);
+
+void free_text(const char* ptr);
 
 }

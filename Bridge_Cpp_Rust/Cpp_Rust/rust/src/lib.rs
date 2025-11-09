@@ -1,54 +1,63 @@
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+// Safe Rust wrapper for C++ library (dynamic FFI)
+
+#![allow(dead_code)]
+
 use libloading::{Library, Symbol};
 
+use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
+
+/// Default path to the C++ library
+const LIB_PATH: &str = "../cpp/lib/libsmartex.so";
+
+// Defines the expected signature of the C++ function
 type ProcessTextFn = unsafe extern "C" fn(*const c_char) -> *const c_char;
+type FreeTextFn = unsafe extern "C" fn(*const c_char);
 
-pub fn verify_library(lib_path: &str) -> Result<(), String> {
+/// Checks if the C++ library is available.
+pub fn verify_library() -> Result<(), String> {
     unsafe {
-        match Library::new(lib_path) {
-            Ok(lib) => {
-                let symbol: Result<Symbol<ProcessTextFn>, _> = lib.get(b"process_text");
-                match symbol {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(format!("Symbol 'process_text' not found: {e}")),
-                }
-            }
-            Err(e) => Err(format!("Failed to load library: {e}")),
+        let lib =
+            Library::new(LIB_PATH).map_err(|e| format!("Library not found in {LIB_PATH}: {e}"))?;
+
+        if lib.get::<Symbol<ProcessTextFn>>(b"process_text").is_err() {
+            return Err("The process_text() function is missing from the library.".into());
         }
+
+        if lib.get::<Symbol<FreeTextFn>>(b"free_text").is_err() {
+            return Err("The free_text() function is missing from the library.".into());
+        }
+
+        Ok(())
     }
 }
 
-extern "C" {
-    fn process_text(input: *const c_char) -> *const c_char;
-}
-
-pub fn rust_process(input: &str) -> String {
-    let c_input = CString::new(input).unwrap();
+// Safe call from Rust to C++
+pub fn rust_process(input: &str) -> Result<String, String> {
     unsafe {
-    // let ptr = process_text(c_input.as_ptr());
-    //     let c_str = CStr::from_ptr(ptr);
-    //     c_str.to_string_lossy().into_owned()
-    }
-    return "C++ processed".to_string();
-}
+        let lib = Library::new(LIB_PATH).map_err(|e| format!("Error loading lib: {e}"))?;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+        let process_text: Symbol<ProcessTextFn> = match lib.get(b"process_text") {
+            Ok(sym) => sym,
+            Err(e) => return Err(format!("The process_text() function was not found.: {e}")),
+        };
 
-    #[test]
-    fn test_lib_exists() {
-        let path = "../cpp/lib/libsmartex.so";
-        match verify_library(path) {
-            Ok(_) => println!("C++ library loaded successfully.: {}", path),
-            Err(err) => panic!("Error loading library.: {}", err),
+        let free_text: Symbol<FreeTextFn> = match lib.get(b"free_text") {
+            Ok(sym) => sym,
+            Err(e) => return Err(format!("Error locating free_text: {e}")),
+        };
+
+        let c_input = CString::new(input).map_err(|_| "Error converting input.".to_string())?;
+
+        let ptr = process_text(c_input.as_ptr());
+        if ptr.is_null() {
+            return Err("[C++] returned null pointer".to_string());
         }
-    }
 
-    #[test]
-    fn test_process_text() {
-        let result = rust_process("Hello from Rust");
-        assert!(result.contains("C++ processed"));
+        let output = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+
+        free_text(ptr);
+
+        Ok(output)
     }
 }

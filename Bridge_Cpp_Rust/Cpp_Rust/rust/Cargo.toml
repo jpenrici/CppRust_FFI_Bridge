@@ -3,5 +3,16 @@ name = "smart_rust"
 version = "0.1.0"
 edition = "2021"
 
+build = "build.rs"
+
 [dependencies]
 libloading = "0.8"
+
+[lib]
+name = "smart_rust"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "smart_rust"
+path = "src/main.rs"
