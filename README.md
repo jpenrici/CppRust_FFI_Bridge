@@ -9,12 +9,11 @@ Demonstrate how Rust can safely call C++ functions through an external shared li
 
 ### Rust
 - [Rust FFI - The Rustonomicon](https://doc.rust-lang.org/nomicon/ffi.html)
-- [libloading crate](https://docs.rs/libloading/latest/libloading/)
 - [The Rust Book - FFI Section](https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html)
+- [libloading crate](https://docs.rs/libloading/latest/libloading/)
 
 ### C++
-- [cppreference.com - extern "C"](https://en.cppreference.com/w/cpp/language/extern)
-- [cppreference.com - Dynamic libraries](https://en.cppreference.com/w/cpp/utility/program)
-- [ISO C++ Standard Library Overview](https://en.cppreference.com/w/cpp)
+- [C++ Standard Library](https://en.cppreference.com/w/cpp/standard_library.html)
+- [cppreference.com - Language linkage](https://en.cppreference.com/w/cpp/language/language_linkage.html)
 
 ---
